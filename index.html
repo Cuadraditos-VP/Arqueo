@@ -371,13 +371,6 @@ details[open]>summary h2::before{content:'▾ '}
 </style>
 </head>
 <body data-tab="arqueo">
-<style>
-  /* Ctrl+S: tapa la pantalla (no se puede minimizar la ventana desde una página) */
-  #minimizado{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font:600 14px system-ui,sans-serif;letter-spacing:.3px}
-  #minimizado.hide{display:none}
-  body.mini{overflow:hidden}
-</style>
-<div id="minimizado" class="hide" aria-hidden="true">Ctrl+S o tocá para volver</div>
 
 <header>
   <div class="top">
@@ -1061,14 +1054,6 @@ $('#shPrint').onclick=()=>{volverRed=false;cerrar('shareModal');abrirImprimir()}
 
 buildArq();fill();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
-// Ctrl+S (o Cmd+S en Mac): minimiza / vuelve. Esc o un toque también vuelven.
-(function(){const m=document.getElementById('minimizado');
-  const set=on=>{m.classList.toggle('hide',!on);document.body.classList.toggle('mini',on);if(on&&document.activeElement)document.activeElement.blur()};
-  document.addEventListener('keydown',e=>{const on=!m.classList.contains('hide');
-    if((e.ctrlKey||e.metaKey)&&!e.altKey&&!e.shiftKey&&e.key.toLowerCase()==='s'){e.preventDefault();e.stopImmediatePropagation();set(!on);return}
-    if(on){e.preventDefault();e.stopImmediatePropagation();if(e.key==='Escape')set(false)}},true);
-  m.addEventListener('click',()=>set(false));
-})();
 </script>
 </body>
 </html>
