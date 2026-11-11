@@ -386,7 +386,7 @@ details[open]>summary h2::before{content:'▾ '}
   .ar h3{font-size:9pt;letter-spacing:1px;text-transform:uppercase;margin:16px 2px 6px}
   .ar .ar-sec{width:60%}
   .ar-cargo{display:flex;justify-content:space-between;align-items:center;border:2pt solid #000;padding:8px 14px;margin-top:16px;font-size:16pt;font-weight:700}
-  .ar-firmas{display:flex;gap:30px;margin-top:22mm}
+  .ar-firmas{display:flex;gap:40mm;margin-top:22mm;padding:0 10mm}
   .ar-firmas div{flex:1;border-top:1pt solid #000;padding-top:4px;text-align:center;font-size:9pt}
 }
 </style>
@@ -1000,7 +1000,9 @@ function datosFuente(f){
 function armarArqueo(formato,copias){
   const r=calc(A),fe=A.fecha||hoy(),cc=v=>v?fmt(v):'–';
   const sum=k=>DEN.reduce((s,d)=>s+r.rows[d][k]*d,0);
-  const secs=[['Planta Alta','pa'],['Ventanilla','ve'],['Cajas (castito/fichas)','pq'],['Torneo de Poker','po']];
+  const usa=k=>k==='ve'||k==='pq'||DEN.some(d=>r.rows[d][k]>0);
+  const secs=[['Planta Alta','pa'],['Ventanilla','ve'],['Cajas (castito/fichas)','pq'],['Torneo de Poker','po']].filter(([,k])=>usa(k));
+  const cols=[['Planta Alta','pa'],['Ventanilla','ve'],['Cajas','pq'],['Poker','po']].filter(([,k])=>usa(k));
   const lineas=[['Fecha',diaSemana(fe)+' '+fechaLarga(fe)]];if(A.nota)lineas.push(['Turno',A.nota]);
   let html,page;
   if(formato==='ticket'){
@@ -1022,15 +1024,15 @@ function armarArqueo(formato,copias){
     page=`@page{size:80mm ${alto}mm;margin:4mm 4mm}`;
   }else{
     html=`<div class="ar">
-      <div class="ar-h"><img src="${SELLO}" alt=""><div><div class="ar-t">ARQUEO</div><div class="ar-s">Caja Central</div></div></div>
+      <div class="ar-h"><div><div class="ar-t">ARQUEO</div><div class="ar-s">Caja Central</div></div></div>
       <div class="ar-f">${lineas.map(([a,b])=>`<span>${a}: <b>${esc(b)}</b></span>`).join('')}</div>
-      <table><thead><tr><th>Billete</th><th>Planta Alta</th><th>Ventanilla</th><th>Cajas</th><th>Poker</th><th>Cantidad</th><th>Importe</th></tr></thead>
-      <tbody>${DEN.map(d=>{const x=r.rows[d];return`<tr><td>$ ${fmt(d)}</td><td>${cc(x.pa)}</td><td>${cc(x.ve)}</td><td>${cc(x.pq)}</td><td>${cc(x.po)}</td><td><b>${cc(x.t)}</b></td><td>$ ${fmt(x.imp)}</td></tr>`}).join('')}</tbody>
-      <tfoot><tr><td>Total</td><td>$ ${fmt(sum('pa'))}</td><td>$ ${fmt(sum('ve'))}</td><td>$ ${fmt(sum('pq'))}</td><td>$ ${fmt(sum('po'))}</td><td>${fmt(r.bill)}</td><td>$ ${fmt(r.tot)}</td></tr></tfoot></table>
+      <table><thead><tr><th>Billete</th>${cols.map(([l])=>`<th>${l}</th>`).join('')}<th>Cantidad</th><th>Importe</th></tr></thead>
+      <tbody>${DEN.map(d=>{const x=r.rows[d];return`<tr><td>$ ${fmt(d)}</td>${cols.map(([,k])=>`<td>${cc(x[k])}</td>`).join('')}<td><b>${cc(x.t)}</b></td><td>$ ${fmt(x.imp)}</td></tr>`}).join('')}</tbody>
+      <tfoot><tr><td>Total</td>${cols.map(([,k])=>`<td>$ ${fmt(sum(k))}</td>`).join('')}<td>${fmt(r.bill)}</td><td>$ ${fmt(r.tot)}</td></tr></tfoot></table>
       <h3>Por sector</h3>
       <table class="ar-sec"><tbody>${secs.map(([l,k])=>`<tr><td>${l}</td><td>$ ${fmt(sum(k))}</td></tr>`).join('')}</tbody></table>
       <div class="ar-cargo"><span>CARGO TOTAL</span><span>$ ${fmt(r.tot)}</span></div>
-      <div class="ar-firmas"><div>Entrega</div><div>Recibe</div><div>Supervisor</div></div></div>`;
+      <div class="ar-firmas"><div>Entrega</div><div>Recibe</div></div></div>`;
     page='@page{size:A4 portrait;margin:12mm}';
   }
   $('#printPrem').innerHTML=html;
