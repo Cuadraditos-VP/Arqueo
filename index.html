@@ -856,7 +856,7 @@ const cerrar=id=>{$('#'+id).classList.add('hide');if(!$$('.vmodal:not(.hide)').l
   if(id==='shareModal'&&volverRed){volverRed=false;renderRed();abrir('redModal')}};
 $('#btnVerif').onclick=()=>abrir('verModal');
 /* F11: el navegador pone la pantalla completa como siempre y la app, al notar el cambio,
-   abre Verificado; al salir de pantalla completa lo cierra. En la app instalada Chrome
+   cierra Verificado; al salir de pantalla completa (se achica la ventana) lo abre. En la app instalada Chrome
    no le pasa la tecla F11 a la página, por eso se mira el tamaño de la ventana. */
 (function(){
   const mq=window.matchMedia?matchMedia('(display-mode: fullscreen)'):null;
@@ -865,7 +865,7 @@ $('#btnVerif').onclick=()=>abrir('verModal');
   let ant=esFS(),cambio=0,t;
   const abrirV=()=>{if(!$('#verModal').classList.contains('hide'))return;$$('.vmodal:not(.hide)').forEach(m=>cerrar(m.id));abrir('verModal')};
   const cerrarV=()=>{if(!$('#verModal').classList.contains('hide'))cerrar('verModal')};
-  const revisar=()=>{clearTimeout(t);t=setTimeout(()=>{const ahora=esFS();if(ahora===ant)return;ant=ahora;cambio=Date.now();ahora?abrirV():cerrarV()},150)};
+  const revisar=()=>{clearTimeout(t);t=setTimeout(()=>{const ahora=esFS();if(ahora===ant)return;ant=ahora;cambio=Date.now();ahora?cerrarV():abrirV()},150)};
   window.addEventListener('resize',revisar);
   document.addEventListener('fullscreenchange',revisar);
   if(mq){mq.addEventListener?mq.addEventListener('change',revisar):mq.addListener(revisar)}
