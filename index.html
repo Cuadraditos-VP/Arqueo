@@ -618,7 +618,7 @@ function turnoActual(){const d=new Date(),m=d.getHours()*60+d.getMinutes();
 
 const PDEN=[20000,10000,1000,500,100];
 const premiosVacios=(n=20)=>Array.from({length:n},()=>({o:0,r:0}));
-function nuevo(){const s={fecha:hoy(),nota:turnoActual(),auto:true,pk:{castN:0,castP:0,fichN:0,fichP:0},b:{},premios:premiosVacios(),v20:null};SECT.forEach(([k])=>{s.b[k]={};DEN.forEach(d=>s.b[k][d]=0)});return s}
+function nuevo(){const s={fecha:fechaTurno(),nota:turnoActual(),auto:true,pk:{castN:0,castP:0,fichN:0,fichP:0},b:{},premios:premiosVacios(),v20:null};SECT.forEach(([k])=>{s.b[k]={};DEN.forEach(d=>s.b[k][d]=0)});return s}
 /* normalización: cualquier dato (guardado o importado) se limpia antes de usarse */
 const num=v=>{const n=Math.floor(Number(v));return Number.isFinite(n)&&n>0?Math.min(n,1e12):0};
 const esObj=x=>x&&typeof x==='object'&&!Array.isArray(x);
@@ -637,7 +637,9 @@ function normH(x){return Array.isArray(x)?x.filter(h=>esObj(h)&&esObj(h.data)).m
 
 let A=(()=>{const x=load(K.cur,null),a=normA(x);if(esObj(x)&&x.auto===undefined)a.auto=true;return a})();
 /* mientras no se cambien a mano, fecha y turno siguen a la hora actual */
-function autoFT(){if(!A.auto)return false;const f=hoy(),t=turnoActual();if(A.fecha===f&&A.nota===t)return false;A.fecha=f;A.nota=t;persist();return true}
+/* fecha del turno: entre las 0 y las 5 sigue siendo la noche del día anterior */
+function fechaTurno(){const d=new Date();if(d.getHours()<5)d.setDate(d.getDate()-1);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)}
+function autoFT(){if(!A.auto)return false;const f=fechaTurno(),t=turnoActual();if(A.fecha===f&&A.nota===t)return false;A.fecha=f;A.nota=t;persist();return true}
 if(!Array.isArray(A.premios))A.premios=premiosVacios();
 let selP=0, tab='arqueo';
 let CONF=normConf(load(K.conf,null));
