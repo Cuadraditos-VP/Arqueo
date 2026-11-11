@@ -233,9 +233,10 @@ details>summary{cursor:pointer;list-style:none}
 .hdr-campos{display:none}
 body[data-tab="arqueo"] .hdr-campos{display:flex}
 .hdr-campos label{min-width:0;display:flex;flex-direction:column;gap:2px;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:#cfe0de}
-.hdr-campos input{min-width:0;max-width:100%;display:block;box-sizing:border-box;height:32px;-webkit-appearance:none;appearance:none;margin:0;background:rgba(255,255,255,.12)!important;border:1px solid rgba(255,255,255,.35)!important;color:#fff;border-radius:8px!important;padding:5px 8px!important;font-size:14px;text-transform:none;letter-spacing:0;width:100%}
+.hdr-campos input,.hdr-campos select{min-width:0;max-width:100%;display:block;box-sizing:border-box;height:32px;-webkit-appearance:none;appearance:none;margin:0;background:rgba(255,255,255,.12)!important;border:1px solid rgba(255,255,255,.35)!important;color:#fff;border-radius:8px!important;padding:5px 8px!important;font-size:14px;text-transform:none;letter-spacing:0;width:100%}
 .hdr-campos input::placeholder{color:rgba(255,255,255,.55)}
-.hdr-campos input:focus{outline:2px solid #fff;outline-offset:0}
+.hdr-campos select option{color:#111;background:#fff}
+.hdr-campos input:focus,.hdr-campos select:focus{outline:2px solid #fff;outline-offset:0}
 .hdr-campos input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.8;cursor:pointer}
 @media (max-width:719px){
   body[data-tab="arqueo"] .hdr-campos{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px;max-width:1100px;margin:8px auto 0}
@@ -379,7 +380,7 @@ details[open]>summary h2::before{content:'▾ '}
   </div>
   <div class="hdr-campos">
     <label>Fecha<input type="date" id="fecha"></label>
-    <label>Turno<input type="text" id="nota" placeholder="Ej: Noche"></label>
+    <label>Turno<select id="nota"><option>Madrugada</option><option>Mañana</option><option>Tarde</option><option>Noche</option></select></label>
   </div>
   <nav id="tabs">
     <button data-t="arqueo" class="on">Arqueo</button>
@@ -610,10 +611,14 @@ const load=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const clone=o=>JSON.parse(JSON.stringify(o));
 const hoy=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
+/* turno según la hora: 5–10 madrugada, 10–15:30 mañana, 15:30–20:30 tarde, 20:30–5 noche */
+const TURNOS=['Madrugada','Mañana','Tarde','Noche'];
+function turnoActual(){const d=new Date(),m=d.getHours()*60+d.getMinutes();
+  return m>=300&&m<600?'Madrugada':m>=600&&m<930?'Mañana':m>=930&&m<1230?'Tarde':'Noche'}
 
 const PDEN=[20000,10000,1000,500,100];
 const premiosVacios=(n=20)=>Array.from({length:n},()=>({o:0,r:0}));
-function nuevo(){const s={fecha:hoy(),nota:'',pk:{castN:0,castP:0,fichN:0,fichP:0},b:{},premios:premiosVacios(),v20:null};SECT.forEach(([k])=>{s.b[k]={};DEN.forEach(d=>s.b[k][d]=0)});return s}
+function nuevo(){const s={fecha:hoy(),nota:turnoActual(),auto:true,pk:{castN:0,castP:0,fichN:0,fichP:0},b:{},premios:premiosVacios(),v20:null};SECT.forEach(([k])=>{s.b[k]={};DEN.forEach(d=>s.b[k][d]=0)});return s}
 /* normalización: cualquier dato (guardado o importado) se limpia antes de usarse */
 const num=v=>{const n=Math.floor(Number(v));return Number.isFinite(n)&&n>0?Math.min(n,1e12):0};
 const esObj=x=>x&&typeof x==='object'&&!Array.isArray(x);
@@ -622,6 +627,7 @@ function normPremios(x){if(!Array.isArray(x)||!x.length)return premiosVacios();
 function normA(x){const n=nuevo();if(!esObj(x))return n;
   if(typeof x.fecha==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.fecha))n.fecha=x.fecha;
   if(typeof x.nota==='string')n.nota=x.nota.slice(0,80);
+  n.auto=x.auto===true;
   if(esObj(x.pk))Object.keys(n.pk).forEach(k=>n.pk[k]=num(x.pk[k]));
   if(esObj(x.b))SECT.forEach(([k])=>{if(esObj(x.b[k]))DEN.forEach(d=>n.b[k][d]=num(x.b[k][d]))});
   n.premios=normPremios(x.premios);
@@ -629,7 +635,9 @@ function normA(x){const n=nuevo();if(!esObj(x))return n;
 function normConf(x){const c=clone(CONF_DEF);if(esObj(x))PKS.forEach(([k])=>{if(esObj(x[k]))DEN.forEach(d=>c[k][d]=num(x[k][d]))});return c}
 function normH(x){return Array.isArray(x)?x.filter(h=>esObj(h)&&esObj(h.data)).map(h=>({guardado:String(h.guardado||''),total:num(h.total),data:normA(h.data),conf:normConf(h.conf)})):[]}
 
-let A=normA(load(K.cur,null));
+let A=(()=>{const x=load(K.cur,null),a=normA(x);if(esObj(x)&&x.auto===undefined)a.auto=true;return a})();
+/* mientras no se cambien a mano, fecha y turno siguen a la hora actual */
+function autoFT(){if(!A.auto)return false;const f=hoy(),t=turnoActual();if(A.fecha===f&&A.nota===t)return false;A.fecha=f;A.nota=t;persist();return true}
 if(!Array.isArray(A.premios))A.premios=premiosVacios();
 let selP=0, tab='arqueo';
 let CONF=normConf(load(K.conf,null));
@@ -730,7 +738,7 @@ function buildArq(){
   $('#tblConf tbody').innerHTML=DEN.map(d=>`<tr><td class="den">$ ${fmt(d)}</td>${PKS.map(([k])=>`<td><input class="n" inputmode="numeric" enterkeyhint="next" data-c="${k}" data-d="${d}"></td>`).join('')}</tr>`).join('');
 }
 function fill(){
-  $('#fecha').value=A.fecha||hoy();$('#nota').value=A.nota||'';
+  $('#fecha').value=A.fecha||hoy();setTurnoSel(A.nota||'');
   $$('[data-pk]').forEach(i=>i.value=A.pk[i.dataset.pk]?fmt(A.pk[i.dataset.pk]):'');
   $$('#tblArq input[data-s]').forEach(i=>{const v=A.b[i.dataset.s][i.dataset.d];i.value=v?fmt(v):''});
   buildPrem();
@@ -757,6 +765,9 @@ function refresh(){
   refreshPrem();updBar();
   $('#tblConf tfoot').innerHTML=`<tr><td style="text-align:right!important">Valor</td>${PKS.map(([k])=>`<td class="num">$ ${(DEN.reduce((s,d)=>s+(CONF[k][d]||0)*d,0)/1e6).toLocaleString('es-AR',{maximumFractionDigits:2})} M</td>`).join('')}</tr>`;
 }
+function setTurnoSel(v){const s=$('#nota');s.querySelectorAll('option[data-x]').forEach(o=>o.remove());
+  if(!TURNOS.includes(v)){const o=document.createElement('option');o.dataset.x='1';o.value=v;o.textContent=v||'—';s.prepend(o)}
+  s.value=v}
 function fechaLarga(f){if(!f)return'';const[y,m,d]=f.split('-');return `${d}/${m}/${y}`}
 function renderHist(){
   if(!H.length){$('#histList').innerHTML='<div class="empty">Todavía no guardaste ningún arqueo.</div>';return}
@@ -777,8 +788,8 @@ document.addEventListener('input',e=>{const i=e.target;
     else if(i.dataset.po!==undefined)A.premios[i.dataset.po].o=v;
     else if(i.dataset.pr!==undefined){A.premios[i.dataset.pr].r=v;selP=+i.dataset.pr}
     persist();refresh();}
-  if(i.id==='fecha'){A.fecha=i.value;persist();refresh()}
-  if(i.id==='nota'){A.nota=i.value;persist();refresh()}
+  if(i.id==='fecha'){A.fecha=i.value;A.auto=false;persist();refresh()}
+  if(i.id==='nota'){A.nota=i.value;A.auto=false;persist();refresh()}
 });
 document.addEventListener('focusout',e=>{if(e.target.matches&&e.target.matches('#premCols input[data-pr]'))setTimeout(refreshPrem,0)});
 document.addEventListener('change',e=>{const i=e.target;if(i.matches('input.n')){const v=int(i.value);i.value=v?fmt(v):''}});
@@ -797,7 +808,7 @@ $('#btnGuardar').onclick=()=>{const r=calc(A);
   if(idx>=0){if(!confirm('Ya hay un arqueo con esa fecha y turno. ¿Reemplazarlo?'))return;H[idx]=item}else H.unshift(item);
   H.sort((a,b)=>(b.data.fecha||'').localeCompare(a.data.fecha||''));save(K.hist,H);toast('Guardado en historial')};
 $('#histList').onclick=e=>{const o=e.target.dataset.open,d=e.target.dataset.del;
-  if(o!==undefined){A=normA(H[o].data);persist();fill();cerrar('histModal');$('#tabs [data-t=arqueo]').click();toast('Arqueo abierto')}
+  if(o!==undefined){A=normA(H[o].data);A.auto=false;persist();fill();cerrar('histModal');$('#tabs [data-t=arqueo]').click();toast('Arqueo abierto')}
   if(d!==undefined&&confirm('¿Eliminar este arqueo del historial?')){H.splice(d,1);save(K.hist,H);renderHist()}};
 $('#btnConfDef').onclick=()=>{if(confirm('¿Volver a la confección original del Excel?')){CONF=clone(CONF_DEF);save(K.conf,CONF);fill();toast('Confección restaurada')}};
 $('#btnExp').onclick=()=>{const blob=new Blob([JSON.stringify({version:1,actual:A,confeccion:CONF,historial:H,redondeos:RD},null,1)],{type:'application/json'});
@@ -1052,7 +1063,9 @@ $('#shDown').onclick=()=>{const a=document.createElement('a');a.href=shareURL;a.
 $('#shCopy').onclick=async()=>{try{await navigator.clipboard.write([new ClipboardItem({'image/png':shareFile})]);toast('Imagen copiada: pegala en WhatsApp o donde quieras')}catch(e){toast('No se pudo copiar')}};
 $('#shPrint').onclick=()=>{volverRed=false;cerrar('shareModal');abrirImprimir()};
 
-buildArq();fill();
+autoFT();buildArq();fill();
+const reAuto=()=>{if(autoFT())fill()};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)reAuto()});setInterval(reAuto,60000);
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
