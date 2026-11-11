@@ -855,11 +855,24 @@ const abrir=id=>{refresh();if(id==='histModal')renderHist();$('#'+id).classList.
 const cerrar=id=>{$('#'+id).classList.add('hide');if(!$$('.vmodal:not(.hide)').length)document.body.style.overflow='';
   if(id==='shareModal'&&volverRed){volverRed=false;renderRed();abrir('redModal')}};
 $('#btnVerif').onclick=()=>abrir('verModal');
-/* F11: el navegador hace lo suyo (pantalla completa) y además se abre o cierra Verificado.
-   No se cancela la tecla, así F11 sigue funcionando igual que siempre. */
-document.addEventListener('keydown',e=>{if(e.key!=='F11'||e.repeat)return;
-  if($('#verModal').classList.contains('hide')){$$('.vmodal:not(.hide)').forEach(m=>cerrar(m.id));abrir('verModal')}
-  else cerrar('verModal')});
+/* F11: el navegador pone la pantalla completa como siempre y la app, al notar el cambio,
+   abre Verificado; al salir de pantalla completa lo cierra. En la app instalada Chrome
+   no le pasa la tecla F11 a la página, por eso se mira el tamaño de la ventana. */
+(function(){
+  const mq=window.matchMedia?matchMedia('(display-mode: fullscreen)'):null;
+  const esFS=()=>!!((mq&&mq.matches)||document.fullscreenElement||document.webkitFullscreenElement||
+    (Math.abs(window.outerWidth-screen.width)<=1&&Math.abs(window.outerHeight-screen.height)<=1));
+  let ant=esFS(),cambio=0,t;
+  const abrirV=()=>{if(!$('#verModal').classList.contains('hide'))return;$$('.vmodal:not(.hide)').forEach(m=>cerrar(m.id));abrir('verModal')};
+  const cerrarV=()=>{if(!$('#verModal').classList.contains('hide'))cerrar('verModal')};
+  const revisar=()=>{clearTimeout(t);t=setTimeout(()=>{const ahora=esFS();if(ahora===ant)return;ant=ahora;cambio=Date.now();ahora?abrirV():cerrarV()},150)};
+  window.addEventListener('resize',revisar);
+  document.addEventListener('fullscreenchange',revisar);
+  if(mq){mq.addEventListener?mq.addEventListener('change',revisar):mq.addListener(revisar)}
+  // si la página sí recibe F11 pero no se nota el cambio de tamaño, alterna Verificado igual
+  document.addEventListener('keydown',e=>{if(e.key!=='F11'||e.repeat)return;const t0=Date.now();
+    setTimeout(()=>{if(cambio>=t0)return;$('#verModal').classList.contains('hide')?abrirV():cerrarV()},700)});
+})();
 $('#btnHist').onclick=()=>abrir('histModal');
 const fechaHora=iso=>{const d=new Date(iso);return isNaN(d)?'':d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'})+' hs'};
 const resumenPrem=ps=>{let r=0,o=0,n=0;ps.forEach(p=>{if(p.r>0){r+=p.r;n++}if(p.o>0)o+=p.o});return{r,o,n,cant:ps.filter(p=>p.o||p.r).length}};
