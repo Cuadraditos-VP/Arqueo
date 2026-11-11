@@ -853,8 +853,17 @@ $('#vHead').innerHTML=DEN.map(d=>`<th>$ ${fmt(d)}</th>`).join('');
 /* ventanas emergentes */
 const abrir=id=>{refresh();if(id==='histModal')renderHist();$('#'+id).classList.remove('hide');document.body.style.overflow='hidden';$('#'+id+' [data-close]').focus()};
 const cerrar=id=>{$('#'+id).classList.add('hide');if(!$$('.vmodal:not(.hide)').length)document.body.style.overflow='';
-  if(id==='shareModal'&&volverRed){volverRed=false;renderRed();abrir('redModal')}};
-$('#btnVerif').onclick=()=>abrir('verModal');
+  if(id==='shareModal'&&volverRed){volverRed=false;renderRed();abrir('redModal')}
+  if(id==='verModal')salirPantallaCompleta()};
+/* VERIFICAR = abrir Verificado + pantalla completa (como F11); VOLVER sale de pantalla completa */
+let fsPropio=false;
+function pantallaCompleta(){const el=document.documentElement,fn=el.requestFullscreen||el.webkitRequestFullscreen;
+  if(!fn||document.fullscreenElement||document.webkitFullscreenElement)return;
+  try{const pr=fn.call(el);fsPropio=true;if(pr&&pr.catch)pr.catch(()=>{fsPropio=false})}catch(e){}}
+function salirPantallaCompleta(){if(!fsPropio)return;fsPropio=false;
+  const fn=document.exitFullscreen||document.webkitExitFullscreen;
+  if(fn&&(document.fullscreenElement||document.webkitFullscreenElement))try{const pr=fn.call(document);if(pr&&pr.catch)pr.catch(()=>{})}catch(e){}}
+$('#btnVerif').onclick=()=>{abrir('verModal');pantallaCompleta()};
 $('#btnHist').onclick=()=>abrir('histModal');
 const fechaHora=iso=>{const d=new Date(iso);return isNaN(d)?'':d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'})+' hs'};
 const resumenPrem=ps=>{let r=0,o=0,n=0;ps.forEach(p=>{if(p.r>0){r+=p.r;n++}if(p.o>0)o+=p.o});return{r,o,n,cant:ps.filter(p=>p.o||p.r).length}};
