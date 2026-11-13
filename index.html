@@ -58,7 +58,9 @@ input:focus{outline:2px solid var(--accent);outline-offset:0}
 .vbox.vmenu{max-width:340px}
 .menu-list{display:flex;flex-direction:column;gap:8px}
 .menu-list .btn{width:100%;padding:12px 14px;font-size:15px}
-.menu-list .btn.dan{margin-top:6px}
+.prem-acc{gap:8px;flex-wrap:nowrap}
+.prem-acc .btn{white-space:nowrap}
+@media (max-width:480px){.prem-acc{gap:5px}.prem-acc .btn.ico{padding:7px 8px}.prem-acc .btn.ico svg{width:20px;height:20px}.prem-acc .btn.sm:not(.ico){padding:6px 9px;font-size:12px}.prem-acc .lg{display:none}}
 .act-row #btnVerif{padding:9px 18px}
 /* Cajas */
 .pk{display:grid;grid-template-columns:1fr 90px 90px;gap:8px;align-items:center}
@@ -486,7 +488,7 @@ details[open]>summary h2::before{content:'▾ '}
       <div class="rseg" id="rStep" role="group" aria-label="Redondear a"><button data-step="100">100</button><button data-step="500">500</button><button data-step="1000">1.000</button></div>
       <span class="hint" id="autoHint"></span>
     </div>
-    <div class="row noprint" style="margin-top:8px"><span class="grow"></span><button class="btn sm pri" id="btnLockO">Confirmar originales</button><button class="btn sm" id="btnUnlockO">Desbloquear originales</button><button class="btn sm ico" id="btnPremMenu" title="Más opciones" aria-label="Más opciones"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button></div>
+    <div class="row noprint prem-acc" style="margin-top:8px"><button class="btn sm dan ico" id="btnBorrarPrem" title="Borrar premios" aria-label="Borrar premios"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9zm-2 3h10v13H7V6zm2 2v9h2V8H9zm4 0v9h2V8h-2z"/></svg></button><span class="grow"></span><button class="btn sm ico" id="btnSharePrem" title="Compartir imagen" aria-label="Compartir imagen"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18 16.1c-.8 0-1.5.3-2 .8l-7.1-4.2c.1-.2.1-.5.1-.7s0-.5-.1-.7L16 7.2c.5.5 1.2.8 2 .8a3 3 0 1 0-3-3c0 .2 0 .5.1.7L8 9.8C7.5 9.3 6.8 9 6 9a3 3 0 1 0 0 6c.8 0 1.5-.3 2-.8l7.1 4.2c-.1.2-.1.4-.1.6a3 3 0 1 0 3-2.9z"/></svg></button><button class="btn sm ico" id="btnPrintPrem" title="Imprimir listado" aria-label="Imprimir listado"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 8H5a3 3 0 0 0-3 3v6h4v4h12v-4h4v-6a3 3 0 0 0-3-3zm-3 11H8v-5h8v5zm3-7a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm-1-9H6v4h12V3z"/></svg></button><button class="btn sm pri" id="btnLockO" title="Confirmar originales">Confirmar<span class="lg"> originales</span></button><button class="btn sm" id="btnUnlockO" title="Desbloquear originales">Desbloquear<span class="lg"> originales</span></button><button class="btn sm ico" id="btnPremMenu" title="Más opciones" aria-label="Más opciones"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button></div>
   </div>
 
 
@@ -564,9 +566,6 @@ details[open]>summary h2::before{content:'▾ '}
       <button class="btn pri" id="btnRedSave">Guardar redondeo</button>
       <button class="btn" id="btnRedList">Redondeos guardados</button>
       <button class="btn" id="btnDetPrem">Detalle por premio</button>
-      <button class="btn" id="btnSharePrem">Compartir imagen</button>
-      <button class="btn" id="btnPrintPrem">Imprimir listado</button>
-      <button class="btn dan" id="btnBorrarPrem">Borrar premios</button>
     </div>
   </div>
 </div>
