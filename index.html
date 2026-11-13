@@ -20,8 +20,6 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
-/* reserva siempre el lugar de la barra de desplazamiento: así el encabezado no se corre al cambiar de página */
-html{scrollbar-gutter:stable}
 button,input,select{font:inherit;color:inherit}
 .num{font-variant-numeric:tabular-nums}
 header{position:sticky;top:0;z-index:10;background:var(--brand);color:#fff;padding:calc(env(safe-area-inset-top) + 10px) 16px 0}
@@ -53,6 +51,10 @@ input:focus{outline:2px solid var(--accent);outline-offset:0}
 .btn.ico{padding:8px 12px;line-height:0}
 .btn.ico svg{width:22px;height:22px}
 .act-row{gap:8px}
+.vbox.vmenu{max-width:340px}
+.menu-list{display:flex;flex-direction:column;gap:8px}
+.menu-list .btn{width:100%;padding:12px 14px;font-size:15px}
+.menu-list .btn.dan{margin-top:6px}
 .act-row #btnVerif{padding:9px 18px}
 /* Cajas */
 .pk{display:grid;grid-template-columns:1fr 90px 90px;gap:8px;align-items:center}
@@ -481,7 +483,7 @@ details[open]>summary h2::before{content:'▾ '}
       <div class="rseg" id="rStep" role="group" aria-label="Redondear a"><button data-step="100">100</button><button data-step="500">500</button><button data-step="1000">1.000</button></div>
       <span class="hint" id="autoHint"></span>
     </div>
-    <div class="row noprint" style="margin-top:8px"><span class="grow"></span><button class="btn sm pri" id="btnLockO">Confirmar originales</button><button class="btn sm" id="btnUnlockO">Desbloquear originales</button></div>
+    <div class="row noprint" style="margin-top:8px"><span class="grow"></span><button class="btn sm pri" id="btnLockO">Confirmar originales</button><button class="btn sm" id="btnUnlockO">Desbloquear originales</button><button class="btn sm ico" id="btnPremMenu" title="Más opciones" aria-label="Más opciones"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button></div>
   </div>
 
   <details class="card">
@@ -489,14 +491,6 @@ details[open]>summary h2::before{content:'▾ '}
     <div class="scroll" style="margin-top:8px"><table id="tblDet"><thead><tr><th>N°</th><th>Redondeo</th><th>20.000</th><th>10.000</th><th>1.000</th><th>500</th><th>100</th></tr></thead><tbody></tbody></table></div>
   </details>
 
-  <div class="row noprint">
-    <button class="btn dan" id="btnBorrarPrem">Borrar premios</button>
-    <span class="grow"></span>
-    <button class="btn" id="btnRedList">Redondeos guardados</button>
-    <button class="btn pri" id="btnRedSave">Guardar redondeo</button>
-    <button class="btn" id="btnSharePrem">Compartir imagen</button>
-    <button class="btn" id="btnPrintPrem">Imprimir listado</button>
-  </div>
 </section>
 
 </main>
@@ -552,6 +546,20 @@ details[open]>summary h2::before{content:'▾ '}
   <div class="vbox vmid">
     <div class="vtop"><span class="vtit">REDONDEOS GUARDADOS</span><span class="vfecha"></span><button class="vvolver" data-close>VOLVER</button></div>
     <div class="card" style="margin-bottom:0"><div id="redList"></div></div>
+  </div>
+</div>
+
+<!-- PREMIOS: menú de opciones -->
+<div id="premMenu" class="vmodal hide" role="dialog" aria-modal="true" aria-label="Opciones de premios">
+  <div class="vbox vmid vmenu">
+    <div class="vtop"><span class="vtit">PREMIOS</span><span class="vfecha"></span><button class="vvolver" data-close>VOLVER</button></div>
+    <div class="card menu-list">
+      <button class="btn pri" id="btnRedSave">Guardar redondeo</button>
+      <button class="btn" id="btnRedList">Redondeos guardados</button>
+      <button class="btn" id="btnSharePrem">Compartir imagen</button>
+      <button class="btn" id="btnPrintPrem">Imprimir listado</button>
+      <button class="btn dan" id="btnBorrarPrem">Borrar premios</button>
+    </div>
   </div>
 </div>
 
@@ -910,6 +918,9 @@ $('#redList').onclick=e=>{const o=e.target.dataset.ropen,d=e.target.dataset.rdel
     abrirCompartir({premios:h.premios,fecha:h.fecha,nota:h.nota,guardado:h.guardado},'GUARDADO '+fechaHora(h.guardado))}
   if(d!==undefined&&confirm('¿Eliminar el redondeo del '+fechaHora(RD[d].guardado)+'?')){RD.splice(d,1);save(KR,RD);renderRed()}};
 $('#btnConf').onclick=()=>abrir('confModal');
+$('#btnPremMenu').onclick=()=>abrir('premMenu');
+// al elegir una opción del menú, el menú se cierra y sigue la acción
+$('#premMenu .menu-list').addEventListener('click',e=>{if(e.target.closest('.btn'))cerrar('premMenu')},true);
 $$('.vmodal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m||e.target.closest('[data-close]'))cerrar(m.id)}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const m=$$('.vmodal:not(.hide)').pop();if(m)cerrar(m.id)}});
 WIDE.addEventListener('change',()=>{buildPrem();refreshPrem()});
