@@ -4,9 +4,9 @@ App web (PWA) adaptada del Excel **ARQUEO OFICIAL 2026.xlsm**. Funciona en el ce
 
 ## Qué incluye (versión 6)
 - **Arqueo**: billetes por sector (Planta Alta, Ventanilla, Torneo de Poker) + paquetes de Castito / Fichas (normal y plus). Total por denominación y total general.
-- **VERIFICAR** (botón abajo a la derecha en Arqueo): ventana emergente como en el Excel, con el total por billete y el Cargo. Se cierra con VOLVER. Abajo tiene "Ver detalle por sector".
+- **VERIFICAR** (botón al final de la tabla de Arqueo, a la derecha, junto al tachito y el disket): ventana emergente como en el Excel, con el total por billete y el Cargo. Se cierra con VOLVER. Abajo tiene "Ver detalle por sector".
 - **Premios** (botón POKER / hoja REDONDEO del Excel): original y redondeo de cada premio con su diferencia. Botones para agregar y quitar premios. Billetes de cada premio con selector ‹ ›, total de billetes de todos los premios (los de $20.000 van solo en fajos de 100) y listado para imprimir en 4 copias.
-- **HISTORIAL** (botón abajo, al lado de VERIFICAR): ventana con los arqueos guardados por fecha y turno (se pueden volver a abrir) y la copia de seguridad (exportar/importar .json).
+- **HISTORIAL** (botón abajo, al lado de CONFECCIÓN): ventana con los arqueos guardados por fecha y turno (se pueden volver a abrir) y la copia de seguridad (exportar/importar .json).
 - **CONFECCIÓN** (botón abajo): ventana chica para editar cuántos billetes lleva cada paquete, con botón para volver a los valores del Excel.
 
 Los datos quedan guardados **solo en el dispositivo** (localStorage del navegador).

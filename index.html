@@ -50,6 +50,8 @@ input:focus{outline:2px solid var(--accent);outline-offset:0}
 .btn.sm{padding:6px 10px;font-size:13px}
 .btn.ico{padding:8px 12px;line-height:0}
 .btn.ico svg{width:22px;height:22px}
+.act-row{gap:8px}
+.act-row #btnVerif{padding:9px 18px}
 /* Cajas */
 .pk{display:grid;grid-template-columns:1fr 90px 90px;gap:8px;align-items:center}
 .pk .h{font-size:12px;color:var(--muted);text-align:center;font-weight:600}
@@ -160,7 +162,7 @@ tfoot td{font-weight:700;border-bottom:0;padding-top:10px}
 .bar-btns .btn{font-size:13px;padding:9px 12px}
 @media (max-width:600px){
   main{padding-bottom:170px}
-  .bar-btns{width:100%;display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:6px}
+  .bar-btns{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .bar-btns .btn{font-size:12px;padding:9px 4px}
 }
 .toast{z-index:40!important}
@@ -446,10 +448,11 @@ details[open]>summary h2::before{content:'▾ '}
     </table>
     </div>
   </div>
-  <div class="row noprint">
-    <button class="btn dan ico" id="btnBorrar" title="Borrar todo" aria-label="Borrar todo"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9zm-2 3h10v13H7V6zm2 2v9h2V8H9zm4 0v9h2V8h-2z"/></svg></button>
+  <div class="row noprint act-row">
     <span class="grow"></span>
+    <button class="btn dan ico" id="btnBorrar" title="Borrar todo" aria-label="Borrar todo"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9zm-2 3h10v13H7V6zm2 2v9h2V8H9zm4 0v9h2V8h-2z"/></svg></button>
     <button class="btn pri ico" id="btnGuardar" title="Guardar en historial" aria-label="Guardar en historial"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10v4z"/></svg></button>
+    <button class="btn pri" id="btnVerif">VERIFICAR</button>
   </div>
 </section>
 
@@ -505,7 +508,6 @@ details[open]>summary h2::before{content:'▾ '}
   <div class="bar-btns" id="barBtns">
     <button class="btn" id="btnHist">HISTORIAL</button>
     <button class="btn" id="btnConf">CONFECCIÓN</button>
-    <button class="btn pri" id="btnVerif">VERIFICAR</button>
   </div>
 </div></div>
 <div class="toast" id="toast"></div>
