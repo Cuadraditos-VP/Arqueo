@@ -234,9 +234,8 @@ tfoot td{font-weight:700;border-bottom:0;padding-top:10px}
 .prem-tot small{display:block;font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;opacity:.75}
 details>summary{cursor:pointer;list-style:none}
 .pk-t{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700}
-/* fecha y turno en el encabezado (solo en la hoja Arqueo) */
-.hdr-campos{display:none}
-body[data-tab="arqueo"] .hdr-campos{display:flex}
+/* fecha y turno en el encabezado (igual en Arqueo y Premios) */
+.hdr-campos{display:flex}
 .hdr-campos label{min-width:0;display:flex;flex-direction:column;gap:2px;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:#cfe0de}
 .hdr-campos input,.hdr-campos select{min-width:0;max-width:100%;display:block;box-sizing:border-box;height:32px;-webkit-appearance:none;appearance:none;margin:0;background:rgba(255,255,255,.12)!important;border:1px solid rgba(255,255,255,.35)!important;color:#fff;border-radius:8px!important;padding:5px 8px!important;font-size:14px;text-transform:none;letter-spacing:0;width:100%}
 .hdr-campos input::placeholder{color:rgba(255,255,255,.55)}
@@ -244,18 +243,18 @@ body[data-tab="arqueo"] .hdr-campos{display:flex}
 .hdr-campos input:focus,.hdr-campos select:focus{outline:2px solid #fff;outline-offset:0}
 .hdr-campos input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.8;cursor:pointer}
 @media (max-width:719px){
-  body[data-tab="arqueo"] .hdr-campos{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px;max-width:1100px;margin:8px auto 0}
+  .hdr-campos{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px;max-width:1100px;margin:8px auto 0}
   .hdr-campos input[type=date]{text-align:left;font-size:14px;padding:5px 6px!important}
   .hdr-campos input[type=date]::-webkit-date-and-time-value{text-align:left}
 }
-body[data-tab="arqueo"] #subt{display:none}
+#subt{display:none}
 @media (max-width:359px){.top h1{font-size:17px}}
 @media (min-width:720px){
   .hdr-campos{position:absolute;left:24px;top:calc(env(safe-area-inset-top) + 18px);flex-direction:column;gap:6px;width:190px}
 }
 @media (min-width:720px) and (max-width:979px){
   .top h1{font-size:25px}
-  body[data-tab="arqueo"] .top{padding-left:170px;padding-right:110px}
+  .top{padding-left:170px;padding-right:110px}
   .hdr-campos{width:150px;left:18px}
 }
 /* redondeo automático */
