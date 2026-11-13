@@ -20,6 +20,8 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+/* reserva siempre el lugar de la barra de desplazamiento: así el encabezado no se corre al cambiar de página */
+html{scrollbar-gutter:stable}
 button,input,select{font:inherit;color:inherit}
 .num{font-variant-numeric:tabular-nums}
 header{position:sticky;top:0;z-index:10;background:var(--brand);color:#fff;padding:calc(env(safe-area-inset-top) + 10px) 16px 0}
