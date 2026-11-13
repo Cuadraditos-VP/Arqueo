@@ -482,7 +482,7 @@ details[open]>summary h2::before{content:'▾ '}
       <button class="btn sm pri" id="btnAutoRed">Redondear</button>
       <span class="hint" id="autoHint"></span>
     </div>
-    <div class="row noprint" style="margin-top:8px"><button class="btn sm" id="btnAddPrem">+ Agregar premio</button><button class="btn sm dan" id="btnDelPrem">− Quitar premio</button><span class="grow"></span><button class="btn sm pri" id="btnLockO">Confirmar originales</button><button class="btn sm" id="btnUnlockO">Desbloquear originales</button></div>
+    <div class="row noprint" style="margin-top:8px"><span class="grow"></span><button class="btn sm pri" id="btnLockO">Confirmar originales</button><button class="btn sm" id="btnUnlockO">Desbloquear originales</button></div>
   </div>
 
   <details class="card">
@@ -705,7 +705,18 @@ function calcPrem(){const tot={};PDEN.forEach(d=>tot[d]=0);let o=0,r=0,dif=0,n=0
   const bill=PDEN.reduce((s,d)=>s+tot[d],0),imp=PDEN.reduce((s,d)=>s+tot[d]*d,0);
   return{tot,o,r,dif,n,bill,imp,oAll,nO,DS,limitado}}
 const WIDE=matchMedia('(min-width:720px)');
+/* filas de premios: siempre queda una vacía al final para cargar el siguiente;
+   las vacías que sobran al final se quitan solas (mínimo 20, como en el Excel) */
+const MINP=20;
+function filasPrem(){let u=-1;A.premios.forEach((p,i)=>{if(p.o||p.r)u=i});
+  const n=Math.max(MINP,u+2);if(n===A.premios.length)return false;
+  while(A.premios.length<n)A.premios.push({o:0,r:0});A.premios.length=n;return true}
+// rehace la lista sin perder el casillero donde se está escribiendo
+function rehacerPrem(){const a=document.activeElement,k=a&&a.dataset&&(a.dataset.po!==undefined?'po':a.dataset.pr!==undefined?'pr':null),i=k&&a.dataset[k],pos=k&&a.selectionStart;
+  buildPrem();refreshPrem();updBar();
+  if(k){const t=$(`#premCols [data-${k}="${i}"]`);if(t){t.focus({preventScroll:true});try{t.setSelectionRange(pos,pos)}catch(_){}}}}
 function buildPrem(){
+  filasPrem();
   // PC: los premios se reparten en dos columnas iguales; celular: una sola lista
   const n=A.premios.length, half=Math.ceil(n/2);
   const chunks=WIDE.matches?[[0,half],[half,n]]:[[0,n]];
@@ -815,11 +826,16 @@ document.addEventListener('input',e=>{const i=e.target;
     else if(i.dataset.c){CONF[i.dataset.c][i.dataset.d]=v;save(K.conf,CONF)}
     else if(i.dataset.po!==undefined)A.premios[i.dataset.po].o=v;
     else if(i.dataset.pr!==undefined){A.premios[i.dataset.pr].r=v;selP=+i.dataset.pr}
-    persist();refresh();}
+    // al cargar la última fila aparece otra vacía debajo
+    const crece=(i.dataset.po!==undefined||i.dataset.pr!==undefined)&&v&&+(i.dataset.po??i.dataset.pr)===A.premios.length-1;
+    if(crece)filasPrem();
+    persist();refresh();if(crece)rehacerPrem()}
   if(i.id==='fecha'){A.fecha=i.value;A.auto=false;persist();refresh()}
   if(i.id==='nota'){A.nota=i.value;A.auto=false;persist();refresh()}
 });
-document.addEventListener('focusout',e=>{if(e.target.matches&&e.target.matches('#premCols input[data-pr]'))setTimeout(refreshPrem,0)});
+document.addEventListener('focusout',e=>{if(e.target.matches&&e.target.matches('#premCols input[data-pr]'))setTimeout(refreshPrem,0);
+  // al salir de un premio que quedó vacío, se quitan las filas vacías que sobran al final
+  if(e.target.matches&&e.target.matches('#premCols input'))setTimeout(()=>{if(filasPrem()){persist();rehacerPrem()}},0)});
 document.addEventListener('change',e=>{const i=e.target;if(i.matches('input.n')){const v=int(i.value);i.value=v?fmt(v):''}});
 document.addEventListener('focusin',e=>{const tr=e.target.closest&&e.target.closest('tr[data-row]');if(tr&&+tr.dataset.row!==selP){selP=+tr.dataset.row;refreshPrem()}
   if(e.target.matches('input.n'))(()=>{const el=e.target,v0=el.value;setTimeout(()=>{if(el.value===v0&&document.activeElement===el)el.select()},0)})()});
@@ -897,13 +913,6 @@ $('#redList').onclick=e=>{const o=e.target.dataset.ropen,d=e.target.dataset.rdel
 $('#btnConf').onclick=()=>abrir('confModal');
 $$('.vmodal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m||e.target.closest('[data-close]'))cerrar(m.id)}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const m=$$('.vmodal:not(.hide)').pop();if(m)cerrar(m.id)}});
-$('#btnAddPrem').onclick=()=>{A.premios.push({o:0,r:0});persist();buildPrem();refreshPrem();
-  const ins=$$('#premCols input[data-po]');ins[ins.length-1].focus()};
-$('#btnDelPrem').onclick=()=>{
-  if(A.premios.length<=20){toast('La lista tiene como mínimo 20 premios');return}
-  const u=A.premios[A.premios.length-1];
-  if((u.o||u.r)&&!confirm(`El premio ${A.premios.length} tiene datos cargados. ¿Quitarlo igual?`))return;
-  A.premios.pop();persist();buildPrem();refreshPrem();updBar();toast('Premio quitado')};
 WIDE.addEventListener('change',()=>{buildPrem();refreshPrem()});
 /* elegir premio: botones ‹ ›, número escrito, flechas y toque en el N° de la tabla */
 function irPremio(i,foco){const n=A.premios.length;if(i<0||i>=n)return;selP=i;refreshPrem();
