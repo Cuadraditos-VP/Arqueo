@@ -362,7 +362,11 @@ details[open]>summary h2::before{content:'▾ '}
   body.pp #printPrem{display:grid!important;grid-template-columns:repeat(4,1fr);color:#000;font-family:Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .slip{padding:0 4mm;border-right:1px dashed #999;break-inside:avoid}
   .slip:first-child{padding-left:0}
-  .slip:last-child{border-right:0;padding-right:0}
+  .slip:nth-child(4){border-right:0;padding-right:0}
+  .slip{padding-bottom:4mm}
+  /* línea de corte debajo de las 4 tiras */
+  .sl-corte{grid-column:1/-1;position:relative;border-top:1px dashed #666;height:0}
+  .sl-corte span{position:absolute;left:0;top:-2.6mm;font-size:10pt;line-height:1;background:#fff;color:#444;padding-right:1mm}
   .sl-h{background:none;color:#000;border:1.5px solid #000;text-align:center;padding:5px 4px 6px;border-radius:2px}
   .sl-t{font-size:12pt;font-weight:700;letter-spacing:2px}
   .sl-s{font-size:7pt;letter-spacing:.8px;opacity:.85;margin-top:1px;text-transform:uppercase}
@@ -1119,7 +1123,7 @@ function armarImpresion(formato,copias,f){
       <table><thead><tr><th>N°</th><th>Importe</th></tr></thead><tbody>${L.map(x=>`<tr><td>${x.n}</td><td>$ ${fmt(x.r)}</td></tr>`).join('')}</tbody>
       <tfoot><tr><td>TOTAL</td><td>$ ${fmt(d.r)}</td></tr></tfoot></table>
       <div class="sl-pie">${MOSTRAR_SELLO?`<img src="${SELLO}" alt="">`:'<span></span>'}<span>${d.n} ${d.n===1?'premio':'premios'}</span></div></div>`;
-    html=Array(4).fill(slip).join('');page='@page{size:A4 portrait;margin:10mm}';
+    html=Array(4).fill(slip).join('')+'<div class="sl-corte"><span>✂</span></div>';page='@page{size:A4 portrait;margin:10mm}';
   }
   $('#printPrem').innerHTML=html;
   let st=$('#pageStyle');if(!st){st=document.createElement('style');st.id='pageStyle';document.head.appendChild(st)}
