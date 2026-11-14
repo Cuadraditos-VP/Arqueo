@@ -1,5 +1,5 @@
 // Cambiá la versión cada vez que subas cambios para que el celular tome la nueva.
-const CACHE = 'arqueo-v31';
+const CACHE = 'arqueo-v32';
 const FILES = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
@@ -10,7 +10,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request).then(r => { const c = r.clone(); caches.open(CACHE).then(x => x.put(e.request, c)); return r; })
+    // no-cache: siempre pregunta al servidor si hay versión nueva (GitHub guarda copias 10 min)
+    fetch(new URL(e.request.url).origin === location.origin ? new Request(e.request.url, {cache: 'no-cache'}) : e.request).then(r => { const c = r.clone(); caches.open(CACHE).then(x => x.put(e.request, c)); return r; })
       .catch(() => caches.match(e.request).then(r => r || caches.match('./index.html')))
   );
 });
