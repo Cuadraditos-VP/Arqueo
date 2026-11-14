@@ -363,7 +363,7 @@ details[open]>summary h2::before{content:'▾ '}
   .slip{padding:0 4mm;border-right:1px dashed #999;break-inside:avoid}
   .slip:first-child{padding-left:0}
   .slip:last-child{border-right:0;padding-right:0}
-  .sl-h{background:#2b3b3b;color:#fff;text-align:center;padding:5px 4px 6px;border-radius:2px}
+  .sl-h{background:none;color:#000;border:1.5px solid #000;text-align:center;padding:5px 4px 6px;border-radius:2px}
   .sl-t{font-size:12pt;font-weight:700;letter-spacing:2px}
   .sl-s{font-size:7pt;letter-spacing:.8px;opacity:.85;margin-top:1px;text-transform:uppercase}
   .sl-f{display:flex;justify-content:space-between;font-size:8pt;margin:5px 1px 4px;color:#333}
@@ -383,7 +383,7 @@ details[open]>summary h2::before{content:'▾ '}
   /* arqueo en hoja A4 */
   body.pa main{display:none}
   body.pa #printPrem{display:block!important;color:#000;font-family:Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .ar-h{display:flex;align-items:center;gap:12px;background:#2b3b3b;color:#fff;padding:10px 14px;border-radius:2px}
+  .ar-h{display:flex;align-items:center;gap:12px;background:none;color:#000;border:1.5px solid #000;padding:10px 14px;border-radius:2px}
   .ar-h img{width:12mm;height:12mm}
   .ar-t{font-size:16pt;font-weight:700;letter-spacing:2px}
   .ar-s{font-size:8pt;letter-spacing:1px;text-transform:uppercase;opacity:.85}
@@ -1139,9 +1139,9 @@ function imagenArqueo(){
   const H=P+70+20+26*lineas.length+16+RH*(DEN.length+2)+40+RH*secs.length+20+50+90+P;
   const cv=document.createElement('canvas');cv.width=W*S;cv.height=H*S;const g=cv.getContext('2d');g.scale(S,S);
   g.fillStyle='#fff';g.fillRect(0,0,W,H);
-  g.fillStyle='#2b3b3b';g.fillRect(P,P,W-2*P,70);
-  g.fillStyle='#fff';g.textAlign='center';g.font=`700 28px ${F}`;g.fillText('A R Q U E O',W/2,P+38);
-  g.font=`12px ${F}`;g.fillStyle='#d6e2e2';g.fillText('CAJA CENTRAL',W/2,P+58);
+  g.strokeStyle='#000';g.lineWidth=1.5;g.strokeRect(P,P,W-2*P,70);
+  g.fillStyle='#000';g.textAlign='center';g.font=`700 28px ${F}`;g.fillText('A R Q U E O',W/2,P+38);
+  g.font=`12px ${F}`;g.fillStyle='#555';g.fillText('CAJA CENTRAL',W/2,P+58);
   let y=P+70+20+16;
   lineas.forEach(([a,b])=>{g.textAlign='left';g.fillStyle='#555';g.font=`14px ${F}`;g.fillText(a+':',P+4,y);g.fillStyle='#000';g.font=`700 14px ${F}`;g.fillText(b,P+70,y);y+=26});
   y+=4;
@@ -1196,9 +1196,9 @@ function imagenPremios(f){
   const cv=document.createElement('canvas');cv.width=W*S;cv.height=H*S;const g=cv.getContext('2d');g.scale(S,S);
   const F='Arial, Helvetica, sans-serif';
   g.fillStyle='#ffffff';g.fillRect(0,0,W,H);
-  g.fillStyle='#2b3b3b';g.fillRect(P,P,W-2*P,64);
-  g.fillStyle='#ffffff';g.textAlign='center';g.font=`700 24px ${F}`;g.fillText('R E D O N D E O',W/2,P+32);
-  g.font=`11px ${F}`;g.fillStyle='#d6e2e2';g.fillText('PREMIOS  ·  CAJA CENTRAL',W/2,P+52);
+  g.strokeStyle='#000';g.lineWidth=1.5;g.strokeRect(P,P,W-2*P,64);
+  g.fillStyle='#000';g.textAlign='center';g.font=`700 24px ${F}`;g.fillText('R E D O N D E O',W/2,P+32);
+  g.font=`11px ${F}`;g.fillStyle='#555';g.fillText('PREMIOS  ·  CAJA CENTRAL',W/2,P+52);
   let y=P+64+14+16;
   d.lineas.forEach(([a,b])=>{g.textAlign='left';g.fillStyle='#555';g.font=`13px ${F}`;g.fillText(a,P+2,y);g.textAlign='right';g.fillStyle='#000';g.font=`700 13px ${F}`;g.fillText(b,W-P-2,y);y+=24});
   y+=4;g.font=`700 10px ${F}`;g.fillStyle='#555';g.textAlign='center';g.fillText('N°',P+40,y);g.textAlign='right';g.fillText('IMPORTE',W-P-8,y);
