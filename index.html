@@ -1141,7 +1141,7 @@ $('#btnDoPrint').onclick=()=>{const formato=$('input[name=pfmt]:checked').value,
   save(PREF,{fmt:formato,copias});armarImpresion(formato,copias,FU||fuenteActual());cerrar('printModal');
   // el formato de impresión queda puesto hasta la próxima impresión: en el celular el navegador
   // vuelve a armar la hoja al elegir la impresora, después de avisar que "terminó" (afterprint)
-  document.body.classList.remove('pp','pf','pa');document.body.classList.add(formato==='ticket'?'pf':(FU&&FU.tipo==='arqueo')?'pa':'pp');setTimeout(()=>window.print(),50)};
+  document.body.classList.remove('pp','pf','pa');document.body.classList.add(formato==='ticket'?'pf':(FU&&FU.tipo==='arqueo')?'pa':'pp');try{window.print()}catch(e){toast('No se pudo abrir la impresión')}};
 
 /* ---- compartir: imagen del cuadro de premios ---- */
 function imagenPremios(f){
