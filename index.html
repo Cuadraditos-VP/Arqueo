@@ -36,6 +36,9 @@ header{position:sticky;top:0;z-index:10;background:var(--brand);color:#fff;paddi
 @media (min-width:720px){.top{position:static}.sello-h{right:20px;top:12px;transform:none;width:58px;height:58px}}
 .sello-pie{width:16px;height:16px;vertical-align:middle;opacity:.85}
 .top small{opacity:.8;font-weight:400;display:block;font-size:12px}
+.sync-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:6px;vertical-align:middle;background:#9aa}
+.sync-dot.ok{background:#3c3}.sync-dot.off{background:#e9a23b}.sync-dot.err{background:#d33}.sync-dot.no{display:none}
+.sync-form{display:grid;gap:8px;margin-top:8px}.sync-form input{width:100%}
 nav{display:flex;gap:4px;max-width:1100px;margin:8px auto 0;overflow-x:auto;scrollbar-width:none}
 nav button{flex:1 0 auto;min-width:0;font-size:14px;border:0;background:transparent;color:#d9e6e6;padding:10px 8px;border-radius:10px 10px 0 0;font-weight:600;cursor:pointer}
 nav button.on{background:var(--bg);color:var(--ink)}
@@ -407,7 +410,7 @@ details[open]>summary h2::before{content:'▾ '}
 <header>
   <div class="top">
     <img class="sello-h" id="selloH" alt="Sello" width="46" height="46">
-    <h1>ARQUEO CAJA CENTRAL<small id="subt">—</small></h1>
+    <h1>ARQUEO CAJA CENTRAL<span id="syncDot" class="sync-dot no" title="Sincronización"></span><small id="subt">—</small></h1>
   </div>
   <div class="hdr-campos">
     <label>Fecha<input type="date" id="fecha"></label>
@@ -575,9 +578,19 @@ details[open]>summary h2::before{content:'▾ '}
   <div class="vbox vmid">
     <div class="vtop"><span class="vtit">HISTORIAL</span><span class="vfecha"></span><button class="vvolver" data-close>VOLVER</button></div>
     <div class="card"><h2>Arqueos guardados</h2><div id="histList"></div></div>
+    <div class="card" id="syncCard">
+      <h2>Sincronización</h2>
+      <p class="muted" style="margin:0;font-size:13px" id="syncTxt">Sin configurar (falta firebase-config.js).</p>
+      <form class="sync-form hide" id="syncLogin" autocomplete="on">
+        <input type="email" id="syncMail" placeholder="Correo" autocomplete="username" required>
+        <input type="password" id="syncPass" placeholder="Contraseña" autocomplete="current-password" required>
+        <button class="btn sm pri" type="submit">Conectar</button>
+      </form>
+      <div class="row hide" id="syncOut" style="margin-top:8px"><button class="btn sm" id="btnSyncOut">Cerrar sesión</button></div>
+    </div>
     <div class="card" style="margin-bottom:0">
       <h2>Copia de seguridad</h2>
-      <p class="muted" style="margin-top:0;font-size:13px">Los datos se guardan solo en este dispositivo. Exportá una copia para no perderlos si borrás el navegador o cambiás de celular.</p>
+      <p class="muted" style="margin-top:0;font-size:13px">Exportá una copia para no perderlos si borrás el navegador o cambiás de celular.</p>
       <div class="row">
         <button class="btn sm" id="btnExp">Exportar (.json)</button>
         <label class="btn sm">Importar<input type="file" id="fileImp" accept=".json,application/json" hidden></label>
@@ -623,6 +636,7 @@ details[open]>summary h2::before{content:'▾ '}
 </div>
 <section id="printPrem" class="printonly"></section>
 
+<script src="firebase-config.js"></script>
 <script>
 'use strict';
 /* sello / marca del programa (silueta) */
@@ -648,7 +662,7 @@ const fmt=n=>(Math.round(n)||0).toLocaleString('es-AR');
 const money=n=>'$ '+fmt(n);
 const int=v=>{const n=parseInt(String(v).replace(/\D/g,''),10);return isNaN(n)?0:n};
 const load=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
-const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(typeof subir==='function')subir(k)};
 const clone=o=>JSON.parse(JSON.stringify(o));
 const hoy=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
 /* turno según la hora: 5–10 madrugada, 10–15:30 mañana, 15:30–20:30 tarde, 20:30–5 noche */
@@ -1232,6 +1246,89 @@ $('#shPrint').onclick=()=>{volverRed=false;cerrar('shareModal');abrirImprimir()}
 autoFT();buildArq();fill();
 const reAuto=()=>{if(autoFT())fill()};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)reAuto()});setInterval(reAuto,60000);
+
+/* ---- sincronización con Firebase: los mismos datos en todos los dispositivos ----
+   Cada dato (arqueo actual, confección, historial, redondeos) es un documento en Firestore.
+   Se sigue guardando también en el dispositivo, así anda sin internet; al volver la conexión se sube.
+   Si dos dispositivos cambian cosas distintas a la vez, se combinan (mezcla de 3 vías contra la última versión común). */
+var SYNC={[K.cur]:'actual',[K.conf]:'confeccion',[K.hist]:'historial',[KR]:'redondeos'};
+var LISTAS=[K.hist,KR],KB='arqueo.sync.base.',pend=new Set(),listo=new Set(),tPend=null;
+let db=null,usr=null,unsubs=[],ultEdit=0,repintar=null;
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+function subir(k){if(!SYNC||!SYNC[k])return;pend.add(k);clearTimeout(tPend);tPend=setTimeout(enviar,500)}
+function enviar(){if(!db||!usr)return;
+  // solo se sube un dato después de haber visto su versión en la nube (para combinar, no pisar)
+  [...pend].filter(k=>listo.has(k)).forEach(k=>{pend.delete(k);const str=lsGet(k);if(str==null)return;lsSet(KB+k,str);
+    db.collection('arqueo').doc(SYNC[k]).set({json:str,dev:DEV,t:firebase.firestore.FieldValue.serverTimestamp()})
+      .catch(e=>estadoSync('err','No se pudo subir: '+(e.code||e.message)))})}
+const DEV=(()=>{let d=lsGet('arqueo.dispositivo');if(!d){d=Math.random().toString(36).slice(2,10);lsSet('arqueo.dispositivo',d)}return d})();
+const S=JSON.stringify;
+function mezclarLista(b,l,r){const id=x=>x&&x.guardado,bi=new Set(b.map(id)),li=new Set(l.map(id));
+  const out=r.filter(x=>!(bi.has(id(x))&&!li.has(id(x))));const oi=new Set(out.map(id));
+  l.forEach(x=>{if(!bi.has(id(x))&&!oi.has(id(x)))out.push(x)});return out}
+function mezclar(b,l,r){
+  if(S(l)===S(r)||S(l)===S(b))return r;if(S(r)===S(b))return l;
+  if(esObj(l)&&esObj(r)){const bb=esObj(b)?b:{},o={};new Set([...Object.keys(l),...Object.keys(r)]).forEach(x=>o[x]=mezclar(bb[x],l[x],r[x]));return o}
+  if(Array.isArray(l)&&Array.isArray(r)){const bb=Array.isArray(b)?b:[],n=Math.max(l.length,r.length),o=[];
+    for(let i=0;i<n;i++){const v=mezclar(bb[i],l[i],r[i]);if(v!==undefined)o.push(v)}return o}
+  return l===undefined&&b!==undefined?undefined:l!==undefined?l:r}
+function aplicar(k,v){const str=S(v);lsSet(k,str);
+  if(k===K.cur){A=normA(v);selP=Math.min(selP,A.premios.length-1)}
+  else if(k===K.conf)CONF=normConf(v);
+  else if(k===K.hist){H=normH(v);H.sort((a,b)=>(b.data.fecha||'').localeCompare(a.data.fecha||''))}
+  else if(k===KR){RD=normRed(v);RD.sort((a,b)=>b.guardado.localeCompare(a.guardado))}
+  pintar(k)}
+/* si se está escribiendo en este momento, se espera a que termine para no mover el cursor */
+function pintar(k){const a=document.activeElement,esc=a&&a.matches&&a.matches('input,select');
+  if(esc&&Date.now()-ultEdit<2500){repintar=repintar||new Set();repintar.add(k);clearTimeout(pintar._t);pintar._t=setTimeout(()=>{const r=repintar;repintar=null;r.forEach(pintar)},1500);return}
+  if(k===K.cur||k===K.conf){if(esc)a.blur();fill()}
+  if(k===K.hist&&!$('#histModal').classList.contains('hide'))renderHist();
+  if(k===KR&&!$('#redModal').classList.contains('hide'))renderRed()}
+document.addEventListener('input',()=>ultEdit=Date.now(),true);
+function recibir(k,s){
+  if(s.metadata.hasPendingWrites)return;
+  if(!s.metadata.fromCache){estadoSync('ok');listo.add(k)}
+  const local=lsGet(k);
+  if(!s.exists){if(!s.metadata.fromCache&&local!=null){pend.add(k);enviar()}return}
+  const j=s.get('json');if(typeof j!=='string')return;let rem;try{rem=JSON.parse(j)}catch(e){return}
+  let base=lsGet(KB+k);
+  if(local===j){lsSet(KB+k,j);return}
+  if(base==null&&LISTAS.includes(k))base='[]';
+  if(local==null||base==null||local===base){lsSet(KB+k,j);aplicar(k,rem);return}   // sin cambios acá: gana lo de la nube
+  if(j===base){pend.add(k);enviar();return}                                           // solo cambió acá: se sube
+  let b,l;try{b=JSON.parse(base);l=JSON.parse(local)}catch(e){lsSet(KB+k,j);aplicar(k,rem);return}
+  const m=LISTAS.includes(k)?mezclarLista(b,l,rem):mezclar(b,l,rem);
+  lsSet(KB+k,j);aplicar(k,m);if(S(m)!==j){pend.add(k);enviar()}}
+function estadoSync(c,t){const d=$('#syncDot');d.className='sync-dot '+c;
+  const txt=t||{ok:'Conectado'+(usr?' como '+usr.email:'')+'. Los cambios se ven en todos los dispositivos.',
+    off:'Sin conexión: los cambios quedan en este dispositivo y se suben al volver internet.',
+    login:'Iniciá sesión para compartir los datos entre dispositivos.',no:'Sin configurar (falta firebase-config.js).'}[c]||'';
+  d.title=txt;$('#syncTxt').textContent=txt;
+  $('#syncLogin').classList.toggle('hide',c!=='login');$('#syncOut').classList.toggle('hide',!usr)}
+function cargarJS(src){return new Promise((ok,mal)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=mal;document.head.appendChild(s)})}
+async function iniciarSync(){const FB=window.FIREBASE_CONFIG;
+  if(!FB||!FB.apiKey){estadoSync('no');return}
+  estadoSync('off','Conectando…');
+  const u=n=>`https://www.gstatic.com/firebasejs/10.12.2/firebase-${n}-compat.js`;
+  try{await cargarJS(u('app'));await cargarJS(u('auth'));await cargarJS(u('firestore'))}
+  catch(e){estadoSync('off');window.addEventListener('online',()=>location.reload(),{once:true});return}
+  firebase.initializeApp(FB);
+  db=firebase.firestore();db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+  firebase.auth().onAuthStateChanged(x=>{usr=x;unsubs.forEach(f=>f());unsubs=[];listo.clear();
+    if(!x){estadoSync('login');return}
+    estadoSync(navigator.onLine?'ok':'off');
+    Object.entries(SYNC).forEach(([k,doc])=>unsubs.push(db.collection('arqueo').doc(doc).onSnapshot({includeMetadataChanges:true},
+      s=>{if(s.metadata.fromCache&&!navigator.onLine)estadoSync('off');recibir(k,s)},
+      e=>estadoSync('err','Error de sincronización: '+(e.code||e.message)+'. Revisá las reglas de Firestore y el usuario.'))))});
+  window.addEventListener('offline',()=>usr&&estadoSync('off'));
+  window.addEventListener('online',()=>usr&&estadoSync('ok'));}
+$('#syncLogin').onsubmit=e=>{e.preventDefault();if(!window.firebase)return;
+  firebase.auth().signInWithEmailAndPassword($('#syncMail').value.trim(),$('#syncPass').value)
+    .then(()=>{$('#syncPass').value='';toast('Conectado')})
+    .catch(err=>alert('No se pudo iniciar sesión: '+(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'?'correo o contraseña incorrectos':(err.code||err.message))))};
+$('#btnSyncOut').onclick=()=>{if(confirm('¿Cerrar sesión? Los datos quedan en este dispositivo pero dejan de sincronizarse.'))firebase.auth().signOut()};
+iniciarSync();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
