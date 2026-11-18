@@ -2,32 +2,42 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // El código vigente es el ID de un documento en "claves" (nadie lo puede leer).
-    function claveOk(c) {
-      return c is string && c.size() >= 8
-        && exists(/databases/$(database)/documents/claves/$(c));
-    }
-    function miCodigo() {
-      return get(/databases/$(database)/documents/miembros/$(request.auth.uid)).data.codigo;
-    }
-    // Dispositivo con acceso: se registró con un código que sigue vigente.
-    function miembro() {
-      return request.auth != null
-        && exists(/databases/$(database)/documents/miembros/$(request.auth.uid))
-        && claveOk(miCodigo());
+    function yo() { return /databases/$(database)/documents/miembros/$(request.auth.uid); }
+    function inicio() { return /databases/$(database)/documents/config/inicio; }
+    // dispositivo autorizado
+    function miembro() { return request.auth != null && exists(yo()); }
+    // dispositivo que puede autorizar a otros
+    function admin() { return miembro() && get(yo()).data.admin == true; }
+    function miembroValido() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['nombre', 'admin', 't'])
+        && d.nombre is string && d.nombre.size() <= 40 && d.admin is bool;
     }
 
-    match /claves/{c} {
-      allow read, update: if false;
-      allow create: if miembro() && c.size() >= 8;      // cambiar código desde la app
-      allow delete: if miembro() && miCodigo() != c;    // borrar el código viejo
+    // marca que ya existe el dispositivo principal (solo se crea una vez, junto con él)
+    match /config/inicio {
+      allow get: if request.auth != null;
+      allow create: if request.auth != null && existsAfter(yo()) && getAfter(yo()).data.admin == true;
     }
 
-    match /miembros/{uid} {
-      allow read, delete: if request.auth != null && request.auth.uid == uid;
-      allow create, update: if request.auth != null && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['codigo', 't'])
-        && claveOk(request.resource.data.codigo);
+    match /miembros/{u} {
+      allow get: if request.auth != null && (request.auth.uid == u || admin());
+      allow list: if admin();
+      allow create: if miembroValido() && (admin()
+        // el primer dispositivo se activa a sí mismo como principal
+        || (request.auth != null && request.auth.uid == u && !exists(inicio()) && existsAfter(inicio())));
+      allow update: if miembroValido() && admin();
+      allow delete: if request.auth != null && (request.auth.uid == u || admin());
+    }
+
+    // pedidos de autorización: el ID es el código de 4 números que muestra el dispositivo
+    match /solicitudes/{c} {
+      allow get: if request.auth != null && (resource.data.uid == request.auth.uid || admin());
+      allow create: if request.auth != null && c.matches('^[0-9]{4}$')
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'nombre', 't'])
+        && request.resource.data.nombre is string && request.resource.data.nombre.size() <= 40;
+      allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || admin());
     }
 
     match /arqueo/{doc} {
