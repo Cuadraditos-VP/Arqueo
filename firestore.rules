@@ -1,11 +1,37 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Solo los usuarios de esta lista pueden leer y escribir los datos del arqueo.
-    // Cambiá el correo por el del usuario que creaste en Authentication (podés poner varios).
+
+    // El código vigente es el ID de un documento en "claves" (nadie lo puede leer).
+    function claveOk(c) {
+      return c is string && c.size() >= 8
+        && exists(/databases/$(database)/documents/claves/$(c));
+    }
+    function miCodigo() {
+      return get(/databases/$(database)/documents/miembros/$(request.auth.uid)).data.codigo;
+    }
+    // Dispositivo con acceso: se registró con un código que sigue vigente.
+    function miembro() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/miembros/$(request.auth.uid))
+        && claveOk(miCodigo());
+    }
+
+    match /claves/{c} {
+      allow read, update: if false;
+      allow create: if miembro() && c.size() >= 8;      // cambiar código desde la app
+      allow delete: if miembro() && miCodigo() != c;    // borrar el código viejo
+    }
+
+    match /miembros/{uid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['codigo', 't'])
+        && claveOk(request.resource.data.codigo);
+    }
+
     match /arqueo/{doc} {
-      allow read, write: if request.auth != null
-        && request.auth.token.email in ['CORREO-DEL-USUARIO@ejemplo.com'];
+      allow read, write: if miembro();
     }
   }
 }

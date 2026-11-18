@@ -581,12 +581,11 @@ details[open]>summary h2::before{content:'▾ '}
     <div class="card" id="syncCard">
       <h2>Sincronización</h2>
       <p class="muted" style="margin:0;font-size:13px" id="syncTxt">Sin configurar (falta firebase-config.js).</p>
-      <form class="sync-form hide" id="syncLogin" autocomplete="on">
-        <input type="email" id="syncMail" placeholder="Correo" autocomplete="username" required>
-        <input type="password" id="syncPass" placeholder="Contraseña" autocomplete="current-password" required>
+      <form class="sync-form hide" id="syncLogin" autocomplete="off">
+        <input type="text" id="syncCod" placeholder="Código de acceso" autocapitalize="characters" autocomplete="off" spellcheck="false" required>
         <button class="btn sm pri" type="submit">Conectar</button>
       </form>
-      <div class="row hide" id="syncOut" style="margin-top:8px"><button class="btn sm" id="btnSyncOut">Cerrar sesión</button></div>
+      <div class="row hide" id="syncOut" style="margin-top:8px;flex-wrap:wrap;gap:8px"><button class="btn sm" id="btnSyncCod">Cambiar código</button><button class="btn sm dan" id="btnSyncOut">Desconectar este dispositivo</button></div>
     </div>
     <div class="card" style="margin-bottom:0">
       <h2>Copia de seguridad</h2>
@@ -1301,11 +1300,23 @@ function recibir(k,s){
   const m=LISTAS.includes(k)?mezclarLista(b,l,rem):mezclar(b,l,rem);
   lsSet(KB+k,j);aplicar(k,m);if(S(m)!==j){pend.add(k);enviar()}}
 function estadoSync(c,t){const d=$('#syncDot');d.className='sync-dot '+c;
-  const txt=t||{ok:'Conectado'+(usr?' como '+usr.email:'')+'. Los cambios se ven en todos los dispositivos.',
+  const txt=t||{ok:'Conectado. Los cambios se ven en todos los dispositivos.',
     off:'Sin conexión: los cambios quedan en este dispositivo y se suben al volver internet.',
-    login:'Iniciá sesión para compartir los datos entre dispositivos.',no:'Sin configurar (falta firebase-config.js).'}[c]||'';
+    codigo:'Ingresá el código de acceso para compartir los datos entre dispositivos (se pide una sola vez).',
+    no:'Sin configurar (falta firebase-config.js).'}[c]||'';
   d.title=txt;$('#syncTxt').textContent=txt;
-  $('#syncLogin').classList.toggle('hide',c!=='login');$('#syncOut').classList.toggle('hide',!usr)}
+  $('#syncLogin').classList.toggle('hide',c!=='codigo');$('#syncOut').classList.toggle('hide',!usr)}
+/* acceso con código: cada dispositivo entra como anónimo y queda registrado en "miembros" con el código vigente.
+   Si se cambia el código, los dispositivos que tenían el viejo dejan de tener acceso y lo vuelven a pedir. */
+const normCod=c=>String(c||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+let uid=null;
+const miDoc=()=>db.collection('miembros').doc(uid);
+function parar(){unsubs.forEach(f=>f());unsubs=[];listo.clear();usr=null}
+function escuchar(){parar();usr={uid};estadoSync(navigator.onLine?'ok':'off');
+  Object.entries(SYNC).forEach(([k,doc])=>unsubs.push(db.collection('arqueo').doc(doc).onSnapshot({includeMetadataChanges:true},
+    s=>{if(s.metadata.fromCache&&!navigator.onLine)estadoSync('off');recibir(k,s)},
+    e=>{parar();e.code==='permission-denied'?estadoSync('codigo','El código de acceso cambió o este dispositivo fue desconectado. Ingresá el código.')
+      :estadoSync('err','Error de sincronización: '+(e.code||e.message))})))}
 function cargarJS(src){return new Promise((ok,mal)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=mal;document.head.appendChild(s)})}
 async function iniciarSync(){const FB=window.FIREBASE_CONFIG;
   if(!FB||!FB.apiKey){estadoSync('no');return}
@@ -1315,19 +1326,32 @@ async function iniciarSync(){const FB=window.FIREBASE_CONFIG;
   catch(e){estadoSync('off');window.addEventListener('online',()=>location.reload(),{once:true});return}
   firebase.initializeApp(FB);
   db=firebase.firestore();db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
-  firebase.auth().onAuthStateChanged(x=>{usr=x;unsubs.forEach(f=>f());unsubs=[];listo.clear();
-    if(!x){estadoSync('login');return}
-    estadoSync(navigator.onLine?'ok':'off');
-    Object.entries(SYNC).forEach(([k,doc])=>unsubs.push(db.collection('arqueo').doc(doc).onSnapshot({includeMetadataChanges:true},
-      s=>{if(s.metadata.fromCache&&!navigator.onLine)estadoSync('off');recibir(k,s)},
-      e=>estadoSync('err','Error de sincronización: '+(e.code||e.message)+'. Revisá las reglas de Firestore y el usuario.'))))});
+  firebase.auth().onAuthStateChanged(async x=>{parar();
+    if(!x){firebase.auth().signInAnonymously().catch(e=>estadoSync('err','No se pudo conectar: '+(e.code||e.message)));return}
+    uid=x.uid;
+    // ya registrado en este dispositivo → escuchar directo (si el código cambió, el error lo avisa)
+    if(lsGet('arqueo.sync.uid')===uid){escuchar();return}
+    try{const m=await miDoc().get();if(m.exists){lsSet('arqueo.sync.uid',uid);escuchar()}else estadoSync('codigo')}
+    catch(e){estadoSync(navigator.onLine?'codigo':'off')}});
   window.addEventListener('offline',()=>usr&&estadoSync('off'));
   window.addEventListener('online',()=>usr&&estadoSync('ok'));}
-$('#syncLogin').onsubmit=e=>{e.preventDefault();if(!window.firebase)return;
-  firebase.auth().signInWithEmailAndPassword($('#syncMail').value.trim(),$('#syncPass').value)
-    .then(()=>{$('#syncPass').value='';toast('Conectado')})
-    .catch(err=>alert('No se pudo iniciar sesión: '+(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'?'correo o contraseña incorrectos':(err.code||err.message))))};
-$('#btnSyncOut').onclick=()=>{if(confirm('¿Cerrar sesión? Los datos quedan en este dispositivo pero dejan de sincronizarse.'))firebase.auth().signOut()};
+$('#syncLogin').onsubmit=e=>{e.preventDefault();if(!db||!uid)return;const c=normCod($('#syncCod').value);
+  if(c.length<8){alert('El código tiene al menos 8 letras o números.');return}
+  miDoc().set({codigo:c,t:firebase.firestore.FieldValue.serverTimestamp()})
+    .then(()=>{$('#syncCod').value='';lsSet('arqueo.sync.uid',uid);escuchar();toast('Conectado')})
+    .catch(err=>alert(err.code==='permission-denied'?'Código incorrecto.':'No se pudo conectar: '+(err.code||err.message)))};
+$('#btnSyncCod').onclick=async()=>{
+  const sug=Array.from(crypto.getRandomValues(new Uint8Array(10)),b=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b%32]).join('');
+  const c=normCod(prompt('Nuevo código de acceso (mínimo 8 letras o números).\nLos demás dispositivos van a tener que ingresarlo de nuevo.',sug));
+  if(!c)return;if(c.length<8){alert('El código tiene que tener al menos 8 letras o números.');return}
+  try{const viejo=(await miDoc().get()).get('codigo');if(viejo===c)return;
+    await db.collection('claves').doc(c).set({t:firebase.firestore.FieldValue.serverTimestamp()});
+    await miDoc().set({codigo:c,t:firebase.firestore.FieldValue.serverTimestamp()});
+    if(viejo)await db.collection('claves').doc(viejo).delete();
+    alert('Código cambiado. Anotalo: '+c)}
+  catch(err){alert('No se pudo cambiar el código: '+(err.code||err.message))}};
+$('#btnSyncOut').onclick=()=>{if(!confirm('¿Desconectar este dispositivo? Los datos quedan acá pero dejan de sincronizarse.'))return;
+  miDoc().delete().catch(()=>{});lsSet('arqueo.sync.uid','');parar();estadoSync('codigo')};
 iniciarSync();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
